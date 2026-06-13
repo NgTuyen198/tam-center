@@ -49,6 +49,45 @@ export default function AdminDashboard() {
   const [classSearch, setClassSearch] = useState('');
   const [classStatusFilter, setClassStatusFilter] = useState('ALL');
 
+  // Thống kê chi tiết được tải bất đồng bộ khi click
+  const [detailRegs, setDetailRegs] = useState<AnyRow[]>([]);
+  const [detailClasses, setDetailClasses] = useState<AnyRow[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const fetchRegistrationDetails = async () => {
+    setDetailLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('registrations')
+        .select(`*, profiles(full_name, phone), course_variants(learning_mode, total_sessions, courses(name, category))`)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setDetailRegs(data || []);
+    } catch (err) {
+      console.error('Error fetching registration details:', err);
+      alert('Không thể tải chi tiết đơn đăng ký.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const fetchClassDetails = async () => {
+    setDetailLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('classes')
+        .select(`*, course_variants(learning_mode, courses(name)), profiles!classes_teacher_id_fkey(full_name)`)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setDetailClasses(data || []);
+    } catch (err) {
+      console.error('Error fetching class details:', err);
+      alert('Không thể tải chi tiết lớp học.');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [userRoleTab, setUserRoleTab] = useState<UserRole>('STUDENT');
@@ -59,29 +98,34 @@ export default function AdminDashboard() {
 
   const checkAuthAndFetch = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-    setCurrentUser(user);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setCurrentUser(user);
 
-    if (activeTab === 'OVERVIEW') {
-      const [{ data: regData }, { data: profData }, { data: clsData }, { data: revData }] = await Promise.all([
-        supabase.from('registrations').select(`*, profiles(full_name, phone), course_variants(learning_mode, total_sessions, courses(name, category))`).order('created_at', { ascending: false }),
-        supabase.from('profiles').select('id, full_name, role, status, created_at'),
-        supabase.from('classes').select(`*, course_variants(learning_mode, courses(name)), profiles!classes_teacher_id_fkey(full_name)`).order('created_at', { ascending: false }),
-        supabase.from('teacher_reviews').select('teacher_id, rating'),
-      ]);
-      setRegs(regData || []);
-      setAllProfiles((profData as Profile[]) || []);
-      setClasses(clsData || []);
-      setReviews(revData || []);
-    } else if (activeTab === 'USERS') {
-      const { data: profs } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-      setProfiles(profs || []);
-    } else if (activeTab === 'LOGS') {
-      const logData = await fetchLogs();
-      setLogs(logData as ActivityLog[]);
+      if (activeTab === 'OVERVIEW') {
+        const [{ data: regData }, { data: profData }, { data: clsData }, { data: revData }] = await Promise.all([
+          supabase.from('registrations').select(`total_amount, status, created_at, package_type, course_variants(learning_mode, courses(name, category))`),
+          supabase.from('profiles').select('id, full_name, role, status, created_at'),
+          supabase.from('classes').select('status'),
+          supabase.from('teacher_reviews').select('teacher_id, rating'),
+        ]);
+        setRegs(regData || []);
+        setAllProfiles((profData as Profile[]) || []);
+        setClasses(clsData || []);
+        setReviews(revData || []);
+      } else if (activeTab === 'USERS') {
+        const { data: profs } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
+        setProfiles(profs || []);
+      } else if (activeTab === 'LOGS') {
+        const logData = await fetchLogs();
+        setLogs(logData as ActivityLog[]);
+      }
+    } catch (err) {
+      console.error('Error fetching admin data:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [activeTab]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -699,7 +743,12 @@ export default function AdminDashboard() {
               </div>
 
               {/* List Table Area */}
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6 relative min-h-[250px]">
+                {detailLoading && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-sm z-30 flex items-center justify-center">
+                    <Loader2 className="animate-spin text-red-600 animate-duration-1000" size={36} />
+                  </div>
+                )}
                 {detailModal.type === 'REGISTRATIONS' ? (
                   <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-surface">
                     <table className="w-full text-left text-sm border-collapse">
