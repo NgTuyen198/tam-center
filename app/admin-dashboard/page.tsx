@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { LayoutDashboard, Users, ScrollText, LogOut, Search, ShieldAlert, DollarSign, GraduationCap, FileText, BookCopy, TrendingUp, UserCog, Wallet, UserCheck, Briefcase, Star, X } from 'lucide-react';
+import { LayoutDashboard, Users, ScrollText, LogOut, Search, ShieldAlert, DollarSign, GraduationCap, FileText, BookCopy, TrendingUp, UserCog, Wallet, UserCheck, Briefcase, Star, X, Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { updateUserRole, toggleUserStatus } from '@/app/actions/adminActions';
 import { fetchLogs } from '@/app/actions/logActions';
