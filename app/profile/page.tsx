@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar, Save, Loader2,
-  GraduationCap, Briefcase, ShieldAlert, BadgeCheck, Award, Clock, CheckCircle2,
+  GraduationCap, Briefcase, ShieldAlert, BadgeCheck, Award, Clock, CheckCircle2, KeyRound,
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { updateMyProfile } from '@/app/actions/profileActions';
@@ -52,6 +52,12 @@ export default function ProfilePage() {
     address: '', bio: '', specialization: '', experience_years: '',
   });
 
+  // States cho đổi mật khẩu
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
   const loadProfile = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
@@ -98,6 +104,35 @@ export default function ProfilePage() {
     setSaved(true);
     await loadProfile();
     setTimeout(() => setSaved(false), 3000);
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      alert('Mật khẩu mới phải có ít nhất 6 ký tự.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      alert('Xác nhận mật khẩu mới không khớp.');
+      return;
+    }
+
+    setPasswordSaving(true);
+    setPasswordSuccess(false);
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+
+    setPasswordSaving(false);
+
+    if (error) {
+      alert('Lỗi cập nhật mật khẩu: ' + error.message);
+      return;
+    }
+
+    setPasswordSuccess(true);
+    setNewPassword('');
+    setConfirmPassword('');
+    setTimeout(() => setPasswordSuccess(false), 4000);
   };
 
   if (loading) {
@@ -243,6 +278,57 @@ export default function ProfilePage() {
             <button type="submit" disabled={saving} className="inline-flex items-center gap-2 bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md shadow-red-600/20 hover:bg-red-700 transition disabled:bg-red-400">
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               Lưu thay đổi
+            </button>
+          </div>
+        </form>
+
+        {/* Form đổi mật khẩu */}
+        <form onSubmit={handlePasswordChange} className="bg-surface rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 md:p-8 space-y-6 animate-in">
+          <div>
+            <h3 className="text-lg font-bold text-foreground flex items-center gap-2 mb-1">
+              <KeyRound size={20} className="text-red-500" /> Đổi mật khẩu
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Thiết lập mật khẩu mới để bảo vệ tài khoản của bạn.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+              <label className={labelClass}>Mật khẩu mới *</label>
+              <input 
+                required 
+                type="password" 
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)} 
+                className={inputClass} 
+                placeholder="Tối thiểu 6 ký tự" 
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Xác nhận mật khẩu mới *</label>
+              <input 
+                required 
+                type="password" 
+                value={confirmPassword} 
+                onChange={e => setConfirmPassword(e.target.value)} 
+                className={inputClass} 
+                placeholder="Nhập lại mật khẩu mới" 
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-5">
+            {passwordSuccess && (
+              <span className="flex items-center gap-1.5 text-sm font-medium text-green-600 dark:text-green-400">
+                <CheckCircle2 size={16} /> Đổi mật khẩu thành công!
+              </span>
+            )}
+            <button 
+              type="submit" 
+              disabled={passwordSaving} 
+              className="inline-flex items-center gap-2 bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl shadow-md shadow-red-600/20 hover:bg-red-700 transition disabled:bg-red-400"
+            >
+              {passwordSaving ? <Loader2 size={18} className="animate-spin" /> : <KeyRound size={18} />}
+              Cập nhật mật khẩu
             </button>
           </div>
         </form>
