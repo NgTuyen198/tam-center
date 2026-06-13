@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { LayoutDashboard, Users, ScrollText, LogOut, Search, ShieldAlert, DollarSign, GraduationCap, FileText, BookCopy, TrendingUp, UserCog, Wallet, UserCheck, Briefcase, Star } from 'lucide-react';
+import { LayoutDashboard, Users, ScrollText, LogOut, Search, ShieldAlert, DollarSign, GraduationCap, FileText, BookCopy, TrendingUp, UserCog, Wallet, UserCheck, Briefcase, Star, X } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { updateUserRole, toggleUserStatus } from '@/app/actions/adminActions';
 import { fetchLogs } from '@/app/actions/logActions';
@@ -36,6 +36,19 @@ export default function AdminDashboard() {
   const [classes, setClasses] = useState<AnyRow[]>([]);
   const [reviews, setReviews] = useState<AnyRow[]>([]);
 
+  // States cho bộ lọc & Chi tiết thống kê
+  const [detailModal, setDetailModal] = useState<{
+    type: 'REGISTRATIONS' | 'CLASSES' | null;
+  }>({ type: null });
+
+  const [regSearch, setRegSearch] = useState('');
+  const [regStatusFilter, setRegStatusFilter] = useState('ALL');
+  const [regModeFilter, setRegModeFilter] = useState('ALL');
+  const [regDateFilter, setRegDateFilter] = useState('ALL');
+
+  const [classSearch, setClassSearch] = useState('');
+  const [classStatusFilter, setClassStatusFilter] = useState('ALL');
+
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [userRoleTab, setUserRoleTab] = useState<UserRole>('STUDENT');
@@ -52,9 +65,9 @@ export default function AdminDashboard() {
 
     if (activeTab === 'OVERVIEW') {
       const [{ data: regData }, { data: profData }, { data: clsData }, { data: revData }] = await Promise.all([
-        supabase.from('registrations').select(`total_amount, status, created_at, package_type, course_variants(learning_mode, courses(name, category))`),
+        supabase.from('registrations').select(`*, profiles(full_name, phone), course_variants(learning_mode, total_sessions, courses(name, category))`).order('created_at', { ascending: false }),
         supabase.from('profiles').select('id, full_name, role, status, created_at'),
-        supabase.from('classes').select('status'),
+        supabase.from('classes').select(`*, course_variants(learning_mode, courses(name)), profiles!classes_teacher_id_fkey(full_name)`).order('created_at', { ascending: false }),
         supabase.from('teacher_reviews').select('teacher_id, rating'),
       ]);
       setRegs(regData || []);
@@ -172,6 +185,45 @@ export default function AdminDashboard() {
     };
   }, [regs, allProfiles, classes, reviews]);
 
+  const filteredRegs = useMemo(() => {
+    return regs.filter(r => {
+      const fullName = r.profiles?.full_name || '';
+      const phone = r.profiles?.phone || '';
+      const matchesSearch = fullName.toLowerCase().includes(regSearch.toLowerCase()) || phone.includes(regSearch);
+
+      const matchesStatus = regStatusFilter === 'ALL' || r.status === regStatusFilter;
+
+      const matchesMode = regModeFilter === 'ALL' || r.course_variants?.learning_mode === regModeFilter;
+
+      const rDate = new Date(r.created_at);
+      const now = new Date();
+      let matchesDate = true;
+      if (regDateFilter === 'TODAY') {
+        matchesDate = rDate.toDateString() === now.toDateString();
+      } else if (regDateFilter === 'THIS_MONTH') {
+        matchesDate = rDate.getMonth() === now.getMonth() && rDate.getFullYear() === now.getFullYear();
+      } else if (regDateFilter === 'LAST_MONTH') {
+        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+        const lastYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        matchesDate = rDate.getMonth() === lastMonth && rDate.getFullYear() === lastYear;
+      }
+
+      return matchesSearch && matchesStatus && matchesMode && matchesDate;
+    });
+  }, [regs, regSearch, regStatusFilter, regModeFilter, regDateFilter]);
+
+  const filteredClassesList = useMemo(() => {
+    return classes.filter(c => {
+      const courseName = c.course_variants?.courses?.name || '';
+      const teacherName = c.profiles?.full_name || '';
+      const matchesSearch = courseName.toLowerCase().includes(classSearch.toLowerCase()) || teacherName.toLowerCase().includes(classSearch.toLowerCase());
+
+      const matchesStatus = classStatusFilter === 'ALL' || c.status === classStatusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [classes, classSearch, classStatusFilter]);
+
   // Đếm số lượng theo vai trò cho các segment
   const roleCounts = useMemo(() => ({
     STUDENT: profiles.filter(p => p.role === 'STUDENT').length,
@@ -248,18 +300,107 @@ export default function AdminDashboard() {
 
             {/* HÀNG KPI 1 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-5">
-              <StatCard icon={DollarSign} color="green" label="Tổng doanh thu" value={formatCompactVND(analytics.totalRevenue)} hint={formatVND(analytics.totalRevenue)} />
-              <StatCard icon={Wallet} color="teal" label="Doanh thu tháng này" value={formatCompactVND(analytics.monthRevenue)} hint={formatVND(analytics.monthRevenue)} />
-              <StatCard icon={FileText} color="amber" label="Tổng đơn đăng ký" value={analytics.totalRegs} hint={`${analytics.pendingRegs} đơn chờ xử lý`} />
-              <StatCard icon={TrendingUp} color="red" label="Giá trị đơn TB" value={formatCompactVND(analytics.avgOrderValue)} hint={formatVND(analytics.avgOrderValue)} />
+              <StatCard 
+                icon={DollarSign} 
+                color="green" 
+                label="Tổng doanh thu" 
+                value={formatCompactVND(analytics.totalRevenue)} 
+                hint={formatVND(analytics.totalRevenue)} 
+                onClick={() => {
+                  setRegStatusFilter('PAID');
+                  setRegDateFilter('ALL');
+                  setRegModeFilter('ALL');
+                  setRegSearch('');
+                  setDetailModal({ type: 'REGISTRATIONS' });
+                }}
+              />
+              <StatCard 
+                icon={Wallet} 
+                color="teal" 
+                label="Doanh thu tháng này" 
+                value={formatCompactVND(analytics.monthRevenue)} 
+                hint={formatVND(analytics.monthRevenue)} 
+                onClick={() => {
+                  setRegStatusFilter('PAID');
+                  setRegDateFilter('THIS_MONTH');
+                  setRegModeFilter('ALL');
+                  setRegSearch('');
+                  setDetailModal({ type: 'REGISTRATIONS' });
+                }}
+              />
+              <StatCard 
+                icon={FileText} 
+                color="amber" 
+                label="Tổng đơn đăng ký" 
+                value={analytics.totalRegs} 
+                hint={`${analytics.pendingRegs} đơn chờ xử lý`} 
+                onClick={() => {
+                  setRegStatusFilter('ALL');
+                  setRegDateFilter('ALL');
+                  setRegModeFilter('ALL');
+                  setRegSearch('');
+                  setDetailModal({ type: 'REGISTRATIONS' });
+                }}
+              />
+              <StatCard 
+                icon={TrendingUp} 
+                color="red" 
+                label="Giá trị đơn TB" 
+                value={formatCompactVND(analytics.avgOrderValue)} 
+                hint={formatVND(analytics.avgOrderValue)} 
+                onClick={() => {
+                  setRegStatusFilter('PAID');
+                  setRegDateFilter('ALL');
+                  setRegModeFilter('ALL');
+                  setRegSearch('');
+                  setDetailModal({ type: 'REGISTRATIONS' });
+                }}
+              />
             </div>
 
             {/* HÀNG KPI 2 */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-              <StatCard icon={Users} color="blue" label="Tổng thành viên" value={analytics.totalUsers} />
-              <StatCard icon={GraduationCap} color="purple" label="Học viên" value={analytics.totalStudents} />
-              <StatCard icon={UserCog} color="purple" label="Giáo viên" value={analytics.totalTeachers} />
-              <StatCard icon={BookCopy} color="red" label="Lớp đang hoạt động" value={analytics.activeClasses} />
+              <StatCard 
+                icon={Users} 
+                color="blue" 
+                label="Tổng thành viên" 
+                value={analytics.totalUsers} 
+                onClick={() => {
+                  setActiveTab('USERS');
+                  setUserRoleTab('STUDENT');
+                }}
+              />
+              <StatCard 
+                icon={GraduationCap} 
+                color="purple" 
+                label="Học viên" 
+                value={analytics.totalStudents} 
+                onClick={() => {
+                  setActiveTab('USERS');
+                  setUserRoleTab('STUDENT');
+                }}
+              />
+              <StatCard 
+                icon={UserCog} 
+                color="purple" 
+                label="Giáo viên" 
+                value={analytics.totalTeachers} 
+                onClick={() => {
+                  setActiveTab('USERS');
+                  setUserRoleTab('TEACHER');
+                }}
+              />
+              <StatCard 
+                icon={BookCopy} 
+                color="red" 
+                label="Lớp đang hoạt động" 
+                value={analytics.activeClasses} 
+                onClick={() => {
+                  setClassStatusFilter('ALL');
+                  setClassSearch('');
+                  setDetailModal({ type: 'CLASSES' });
+                }}
+              />
             </div>
 
             {/* BIỂU ĐỒ DOANH THU + ĐƠN */}
@@ -450,6 +591,234 @@ export default function AdminDashboard() {
             </div>
 
             <LogTable logs={filteredLogs} showUser />
+          </div>
+        )}
+
+        {/* ============ MODAL CHI TIẾT THỐNG KÊ ============ */}
+        {detailModal.type && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-surface w-full max-w-4xl max-h-[85vh] rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden animate-in">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-red-600 to-red-700 text-white p-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold">
+                    {detailModal.type === 'REGISTRATIONS' ? 'Chi Tiết Đơn Đăng Ký & Doanh Thu' : 'Chi Tiết Danh Sách Lớp Học'}
+                  </h3>
+                  <p className="text-red-100 text-sm mt-1">Danh sách chi tiết kết hợp các bộ lọc tìm kiếm.</p>
+                </div>
+                <button 
+                  onClick={() => setDetailModal({ type: null })}
+                  className="bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Filters Area */}
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                {detailModal.type === 'REGISTRATIONS' ? (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tìm kiếm</label>
+                      <input 
+                        type="text" 
+                        placeholder="Tên học viên, SĐT..."
+                        value={regSearch}
+                        onChange={e => setRegSearch(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Trạng thái</label>
+                      <select 
+                        value={regStatusFilter}
+                        onChange={e => setRegStatusFilter(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                      >
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="PENDING">Chờ xử lý</option>
+                        <option value="PAID">Đã thanh toán (Chờ lớp)</option>
+                        <option value="ASSIGNED_CLASS">Đã xếp lớp</option>
+                        <option value="CANCELLED">Đã hủy</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Hình thức học</label>
+                      <select 
+                        value={regModeFilter}
+                        onChange={e => setRegModeFilter(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                      >
+                        <option value="ALL">Tất cả hình thức</option>
+                        <option value="GROUP">Học nhóm</option>
+                        <option value="1_ON_1">1 kèm 1 (VIP)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Thời gian</label>
+                      <select 
+                        value={regDateFilter}
+                        onChange={e => setRegDateFilter(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                      >
+                        <option value="ALL">Tất cả thời gian</option>
+                        <option value="TODAY">Hôm nay</option>
+                        <option value="THIS_MONTH">Tháng này</option>
+                        <option value="LAST_MONTH">Tháng trước</option>
+                      </select>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Tìm kiếm</label>
+                      <input 
+                        type="text" 
+                        placeholder="Tên khóa học, tên giáo viên..."
+                        value={classSearch}
+                        onChange={e => setClassSearch(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Trạng thái lớp</label>
+                      <select 
+                        value={classStatusFilter}
+                        onChange={e => setClassStatusFilter(e.target.value)}
+                        className="w-full text-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                      >
+                        <option value="ALL">Tất cả trạng thái</option>
+                        <option value="FORMING">Đang chiêu sinh (Forming)</option>
+                        <option value="READY">Sẵn sàng học (Ready)</option>
+                        <option value="IN_PROGRESS">Đang tiến hành (In Progress)</option>
+                        <option value="COMPLETED">Đã hoàn thành (Completed)</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* List Table Area */}
+              <div className="flex-1 overflow-y-auto p-6">
+                {detailModal.type === 'REGISTRATIONS' ? (
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-surface">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="p-4 font-bold">Ngày đăng ký</th>
+                          <th className="p-4 font-bold">Học viên</th>
+                          <th className="p-4 font-bold">Khóa học / Gói học</th>
+                          <th className="p-4 font-bold text-right">Doanh thu</th>
+                          <th className="p-4 font-bold text-center">Trạng thái</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredRegs.map((r, i) => (
+                          <tr key={i} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <td className="p-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                              {new Date(r.created_at).toLocaleDateString('vi-VN')}
+                            </td>
+                            <td className="p-4">
+                              <div className="font-bold text-foreground">{r.profiles?.full_name || 'Khách ẩn danh'}</div>
+                              <div className="text-xs text-slate-400">{r.profiles?.phone || 'Chưa cập nhật SĐT'}</div>
+                            </td>
+                            <td className="p-4">
+                              <div className="font-medium text-foreground">{r.course_variants?.courses?.name || 'Khóa học'}</div>
+                              <div className="text-xs text-slate-400">
+                                {r.course_variants?.learning_mode === 'GROUP' ? 'Học nhóm' : '1 kèm 1 VIP'} ({r.package_type === 'FULL_PACKAGE' ? 'Trọn khóa' : 'Lẻ buổi'})
+                              </div>
+                            </td>
+                            <td className="p-4 text-right font-bold text-red-600 dark:text-red-400">
+                              {formatVND(r.total_amount)}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                r.status === 'PAID' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' :
+                                r.status === 'ASSIGNED_CLASS' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
+                                r.status === 'PENDING' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400' :
+                                'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                              }`}>
+                                {r.status === 'PAID' ? 'Đã thanh toán' :
+                                 r.status === 'ASSIGNED_CLASS' ? 'Đã xếp lớp' :
+                                 r.status === 'PENDING' ? 'Chờ xử lý' : 'Đã hủy'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredRegs.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-center py-12 text-slate-400 dark:text-slate-500">
+                              Không tìm thấy hóa đơn/đăng ký nào khớp với bộ lọc.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-2xl overflow-hidden bg-surface">
+                    <table className="w-full text-left text-sm border-collapse">
+                      <thead className="bg-slate-50 dark:bg-slate-800/70 text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="p-4 font-bold">Khóa học</th>
+                          <th className="p-4 font-bold">Hình thức</th>
+                          <th className="p-4 font-bold">Giáo viên phụ trách</th>
+                          <th className="p-4 font-bold text-center">Sĩ số</th>
+                          <th className="p-4 font-bold text-center">Trạng thái lớp</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredClassesList.map((c, i) => (
+                          <tr key={i} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                            <td className="p-4">
+                              <div className="font-bold text-foreground">{c.course_variants?.courses?.name || 'Khóa học'}</div>
+                            </td>
+                            <td className="p-4 text-slate-500 dark:text-slate-400">
+                              {c.course_variants?.learning_mode === 'GROUP' ? 'Học nhóm' : '1 kèm 1 VIP'}
+                            </td>
+                            <td className="p-4 font-medium text-foreground">
+                              {c.profiles?.full_name || 'Chưa phân công'}
+                            </td>
+                            <td className="p-4 text-center font-bold text-slate-700 dark:text-slate-300">
+                              {c.current_students} / {c.max_students}
+                            </td>
+                            <td className="p-4 text-center">
+                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                                c.status === 'IN_PROGRESS' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' :
+                                c.status === 'READY' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' :
+                                c.status === 'FORMING' ? 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400' :
+                                'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                              }`}>
+                                {c.status === 'IN_PROGRESS' ? 'Đang học' :
+                                 c.status === 'READY' ? 'Sẵn sàng' :
+                                 c.status === 'FORMING' ? 'Chiêu sinh' : 'Hoàn thành'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {filteredClassesList.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="text-center py-12 text-slate-400 dark:text-slate-500">
+                              Không tìm thấy lớp học nào khớp với bộ lọc.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-slate-50 dark:bg-slate-900/40 border-t border-slate-100 dark:border-slate-800 flex justify-end shrink-0">
+                <button 
+                  onClick={() => setDetailModal({ type: null })}
+                  className="bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold px-5 py-2.5 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-700 transition"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

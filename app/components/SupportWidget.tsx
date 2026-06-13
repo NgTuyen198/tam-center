@@ -63,6 +63,7 @@ export default function SupportWidget() {
   // Lấy user + vai trò hiện tại và tự động cập nhật khi trạng thái đăng nhập thay đổi
   useEffect(() => {
     const checkUser = async () => {
+      setAuthReady(false);
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id ?? null;
       setUserId(uid);
@@ -78,6 +79,7 @@ export default function SupportWidget() {
     checkUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setAuthReady(false);
       const uid = session?.user?.id ?? null;
       setUserId(uid);
       if (uid) {

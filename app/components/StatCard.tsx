@@ -9,6 +9,7 @@ interface StatCardProps {
   hint?: string;
   /** màu accent: red | blue | green | purple | amber | teal */
   color?: 'red' | 'blue' | 'green' | 'purple' | 'amber' | 'teal';
+  onClick?: () => void;
 }
 
 const colorMap = {
@@ -20,9 +21,15 @@ const colorMap = {
   teal: 'bg-teal-50 text-teal-600 dark:bg-teal-500/15 dark:text-teal-400',
 };
 
-export default function StatCard({ icon: Icon, label, value, hint, color = 'red' }: StatCardProps) {
+export default function StatCard({ icon: Icon, label, value, hint, color = 'red', onClick }: StatCardProps) {
+  const isClickable = !!onClick;
   return (
-    <div className="bg-surface p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 hover:shadow-md transition-shadow">
+    <div 
+      onClick={onClick}
+      className={`bg-surface p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 transition-all duration-200 ${
+        isClickable ? 'cursor-pointer hover:shadow-md hover:-translate-y-1 hover:border-slate-200 dark:hover:border-slate-700' : ''
+      }`}
+    >
       <div className="flex items-start justify-between mb-4">
         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${colorMap[color]}`}>
           <Icon size={24} />
