@@ -136,6 +136,14 @@ export default function AdminDashboard() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) checkAuthAndFetch(); }, [checking, checkAuthAndFetch]);
 
+  useEffect(() => {
+    if (detailModal.type === 'REGISTRATIONS') {
+      fetchRegistrationDetails();
+    } else if (detailModal.type === 'CLASSES') {
+      fetchClassDetails();
+    }
+  }, [detailModal.type]);
+
   // ============ TÍNH TOÁN THỐNG KÊ ============
   const analytics = useMemo(() => {
     const now = new Date();
@@ -235,7 +243,7 @@ export default function AdminDashboard() {
   }, [regs, allProfiles, classes, reviews]);
 
   const filteredRegs = useMemo(() => {
-    return regs.filter(r => {
+    return detailRegs.filter(r => {
       const fullName = r.profiles?.full_name || '';
       const phone = r.profiles?.phone || '';
       const matchesSearch = fullName.toLowerCase().includes(regSearch.toLowerCase()) || phone.includes(regSearch);
@@ -259,10 +267,10 @@ export default function AdminDashboard() {
 
       return matchesSearch && matchesStatus && matchesMode && matchesDate;
     });
-  }, [regs, regSearch, regStatusFilter, regModeFilter, regDateFilter]);
+  }, [detailRegs, regSearch, regStatusFilter, regModeFilter, regDateFilter]);
 
   const filteredClassesList = useMemo(() => {
-    return classes.filter(c => {
+    return detailClasses.filter(c => {
       const courseName = c.course_variants?.courses?.name || '';
       const teacherName = c.profiles?.full_name || '';
       const matchesSearch = courseName.toLowerCase().includes(classSearch.toLowerCase()) || teacherName.toLowerCase().includes(classSearch.toLowerCase());
@@ -271,7 +279,7 @@ export default function AdminDashboard() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [classes, classSearch, classStatusFilter]);
+  }, [detailClasses, classSearch, classStatusFilter]);
 
   // Đếm số lượng theo vai trò cho các segment
   const roleCounts = useMemo(() => ({
