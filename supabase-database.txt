@@ -1,0 +1,200 @@
+Đây là file để hiểu cấu trúc bảng hiện có của database trên Supabase, nếu cần sửa bảng hay update gì thì phải nhắc tôi chạy lệnh SQL Editor nhé
+
+[
+  {
+    "bang": "activity_logs",
+    "ten_chinh_sach": "Auth_Truy_Cap_Nhat_Ky",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "activity_logs",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem logs",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "activity_logs",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "attendance",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem attendance",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "attendance",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "attendance",
+    "ten_chinh_sach": "Auth_Truy_Cap_Attendance",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "class_students",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "class_students",
+    "ten_chinh_sach": "Auth_Truy_Cap_Hoc_Vien_Lop",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "class_students",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem class_students",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "classes",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem danh sách lớp",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "classes",
+    "ten_chinh_sach": "Auth_Truy_Cap_Lop_Hoc",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "classes",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "course_variants",
+    "ten_chinh_sach": "Mọi user được xem biến thể khóa học",
+    "ap_dung_cho_role": "{public}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "course_variants",
+    "ten_chinh_sach": "Auth_Sua_Bang_Gia",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "course_variants",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "course_variants",
+    "ten_chinh_sach": "Cho_Phep_Public_Xem_Bang_Gia",
+    "ap_dung_cho_role": "{public}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "courses",
+    "ten_chinh_sach": "Auth_Sua_Khoa_Hoc",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "courses",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "courses",
+    "ten_chinh_sach": "Mọi user được xem khóa học",
+    "ap_dung_cho_role": "{public}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "courses",
+    "ten_chinh_sach": "Cho_Phep_Public_Xem_Khoa_Hoc",
+    "ap_dung_cho_role": "{public}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "profiles",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem profiles",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "profiles",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "registrations",
+    "ten_chinh_sach": "Auth_Truy_Cap_Don_Dang_Ky",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "registrations",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "registrations",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem registrations",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "schedules",
+    "ten_chinh_sach": "Mọi user đăng nhập được xem schedules",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "SELECT",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "schedules",
+    "ten_chinh_sach": "Cho phép ứng dụng thao tác Write qua Server Action",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  },
+  {
+    "bang": "schedules",
+    "ten_chinh_sach": "Auth_Truy_Cap_Schedules",
+    "ap_dung_cho_role": "{authenticated}",
+    "quyen_han": "ALL",
+    "dieu_kien_check": "true"
+  }
+]
