@@ -85,7 +85,13 @@ export default function StudentDashboard() {
     <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden">
       <aside className="w-16 md:w-64 bg-surface border-r border-slate-200 dark:border-slate-800 flex flex-col z-20 transition-all">
         <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 hidden md:block text-center">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-500/15 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 font-black text-2xl mx-auto mb-3">{profile?.full_name?.charAt(0) || 'H'}</div>
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-500/15 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 font-black text-2xl mx-auto mb-3 overflow-hidden">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              profile?.full_name?.charAt(0) || 'H'
+            )}
+          </div>
           <h3 className="font-bold text-foreground line-clamp-1">{profile?.full_name}</h3>
           <span className="text-xs font-bold text-white bg-slate-900 dark:bg-slate-700 px-2 py-0.5 rounded mt-1 inline-block">Học Viên</span>
         </div>

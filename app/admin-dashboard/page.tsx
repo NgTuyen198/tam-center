@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
 import { LayoutDashboard, Users, ScrollText, LogOut, Search, ShieldAlert, DollarSign, GraduationCap, FileText, BookCopy, TrendingUp, UserCog, Wallet, UserCheck, Briefcase, Star, X, Loader2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { updateUserRole, toggleUserStatus } from '@/app/actions/adminActions';
@@ -29,6 +30,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [myProfile, setMyProfile] = useState<Profile | null>(null);
 
   // Dữ liệu thô cho phần thống kê
   const [regs, setRegs] = useState<AnyRow[]>([]);
@@ -102,6 +104,9 @@ export default function AdminDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setCurrentUser(user);
+
+      const { data: myProf } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      if (myProf) setMyProfile(myProf as Profile);
 
       if (activeTab === 'OVERVIEW') {
         const [{ data: regData }, { data: profData }, { data: clsData }, { data: revData }] = await Promise.all([
@@ -318,12 +323,26 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-black text-white flex items-center gap-2"><ShieldAlert className="text-red-500" /> Admin</h2>
           <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">Portal Quản Trị Viên</p>
         </div>
+        <div className="p-4 bg-slate-800/50 mx-4 mt-4 rounded-xl flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-600 text-white font-black text-lg flex items-center justify-center overflow-hidden shrink-0 border border-slate-700">
+            {myProfile?.avatar_url ? (
+              <img src={myProfile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              myProfile?.full_name?.charAt(0) || 'A'
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold truncate text-sm">{myProfile?.full_name || 'Admin'}</div>
+            <div className="text-xs text-slate-400">Quản trị viên</div>
+          </div>
+        </div>
         <nav className="flex-1 p-4 space-y-2 mt-4">
           <button onClick={() => setActiveTab('OVERVIEW')} className={navBtn(activeTab === 'OVERVIEW')}><LayoutDashboard size={20} /> Báo Cáo & Thống Kê</button>
           <button onClick={() => setActiveTab('USERS')} className={navBtn(activeTab === 'USERS')}><Users size={20} /> Quản Lý Tài Khoản</button>
           <button onClick={() => setActiveTab('LOGS')} className={navBtn(activeTab === 'LOGS')}><ScrollText size={20} /> Dấu Vết Hệ Thống</button>
         </nav>
         <div className="p-4 border-t border-slate-800 space-y-3">
+          <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
           <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>

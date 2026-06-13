@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar, Save, Loader2,
-  GraduationCap, Briefcase, ShieldAlert, BadgeCheck, Award, Clock, CheckCircle2, KeyRound,
+  GraduationCap, Briefcase, ShieldAlert, BadgeCheck, Award, Clock, CheckCircle2, KeyRound, Camera
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { updateMyProfile } from '@/app/actions/profileActions';
@@ -50,6 +50,7 @@ export default function ProfilePage() {
   const [form, setForm] = useState({
     full_name: '', phone: '', gender: '', date_of_birth: '',
     address: '', bio: '', specialization: '', experience_years: '',
+    avatar_url: '',
   });
 
   // States cho đổi mật khẩu
@@ -57,6 +58,9 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  // States cho ảnh đại diện
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -77,6 +81,7 @@ export default function ProfilePage() {
         bio: prof.bio || '',
         specialization: prof.specialization || '',
         experience_years: prof.experience_years != null ? String(prof.experience_years) : '',
+        avatar_url: prof.avatar_url || '',
       });
     }
     setLoading(false);
@@ -96,6 +101,7 @@ export default function ProfilePage() {
       date_of_birth: form.date_of_birth || null,
       address: form.address || null,
       bio: form.bio || null,
+      avatar_url: form.avatar_url || null,
       specialization: form.specialization || null,
       experience_years: form.experience_years ? parseInt(form.experience_years, 10) : null,
     });
@@ -135,6 +141,56 @@ export default function ProfilePage() {
     setTimeout(() => setPasswordSuccess(false), 4000);
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Kích thước ảnh tối đa là 2MB.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Chưa đăng nhập');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Tải ảnh lên bucket 'avatars'
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      // Lấy link public
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Cập nhật CSDL
+      const { error: dbError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (dbError) throw dbError;
+
+      setForm(prev => ({ ...prev, avatar_url: publicUrl }));
+      alert('Đã cập nhật ảnh đại diện thành công!');
+    } catch (err) {
+      console.error('Error uploading avatar:', err);
+      alert('Lỗi tải ảnh lên: ' + (err as Error).message + '\n\nLưu ý: Đảm bảo bạn đã tạo bucket tên là "avatars" ở chế độ Public trên Supabase Storage.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -166,8 +222,24 @@ export default function ProfilePage() {
           <div className="h-24 bg-gradient-to-r from-red-600 to-red-500" />
           <div className="px-6 pb-6">
             <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
-              <div className="w-24 h-24 rounded-3xl bg-white dark:bg-slate-800 border-4 border-surface shadow-lg flex items-center justify-center text-red-600 dark:text-red-400 font-black text-4xl shrink-0">
-                {initial}
+              <div className="relative shrink-0">
+                <div className="w-24 h-24 rounded-3xl bg-white dark:bg-slate-800 border-4 border-surface shadow-lg flex items-center justify-center text-red-600 dark:text-red-400 font-black text-4xl overflow-hidden">
+                  {form.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={form.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    initial
+                  )}
+                </div>
+                {uploadingAvatar && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-3xl z-10">
+                    <Loader2 className="animate-spin text-white" size={20} />
+                  </div>
+                )}
+                <label className="absolute -bottom-2 -right-2 bg-red-600 text-white p-2 rounded-full shadow-lg hover:bg-red-700 hover:scale-105 active:scale-95 transition-all cursor-pointer border-2 border-white dark:border-slate-800 flex items-center justify-center">
+                  <Camera size={16} />
+                  <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                </label>
               </div>
               <div className="flex-1 min-w-0 sm:pb-2">
                 <h2 className="text-2xl font-black text-foreground truncate">{form.full_name || 'Chưa đặt tên'}</h2>

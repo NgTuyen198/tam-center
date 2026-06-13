@@ -11,6 +11,7 @@ export interface ProfileUpdateInput {
   date_of_birth: string | null
   address: string | null
   bio: string | null
+  avatar_url?: string | null
   // Chỉ áp dụng cho giáo viên
   specialization?: string | null
   experience_years?: number | null
@@ -35,6 +36,7 @@ export async function updateMyProfile(input: ProfileUpdateInput) {
     date_of_birth: input.date_of_birth || null,
     address: input.address?.trim() || null,
     bio: input.bio?.trim() || null,
+    avatar_url: input.avatar_url || null,
     updated_at: new Date().toISOString(),
   }
 

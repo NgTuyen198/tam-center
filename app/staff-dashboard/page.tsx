@@ -234,9 +234,18 @@ export default function StaffDashboard() {
           <h2 className="text-2xl font-black text-white flex items-center gap-2"><span className="text-red-500">TAM</span> Center</h2>
           <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">Portal Nhân Viên</p>
         </div>
-        <div className="p-4 bg-slate-800/50 mx-4 mt-4 rounded-xl text-center">
-          <div className="font-bold">{profile?.full_name}</div>
-          <div className="text-xs text-slate-400">Nhân viên Vận hành</div>
+        <div className="p-4 bg-slate-800/50 mx-4 mt-4 rounded-xl flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-600 text-white font-black text-lg flex items-center justify-center overflow-hidden shrink-0 border border-slate-700">
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              profile?.full_name?.charAt(0) || 'N'
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold truncate text-sm">{profile?.full_name}</div>
+            <div className="text-xs text-slate-400">Nhân viên Vận hành</div>
+          </div>
         </div>
         <nav className="flex-1 p-4 space-y-2 mt-2">
           <button onClick={() => setActiveTab('OVERVIEW')} className={navBtn(activeTab === 'OVERVIEW')}><LayoutDashboard size={20} /> Vận Hành Lớp Học</button>
