@@ -1,7 +1,7 @@
 ================================================================================
 CODEBASE EXPORT SUMMARY
 ================================================================================
-Generated on: 2026-06-13T08:31:32.694Z
+Generated on: 2026-06-13T08:38:14.808Z
 Export Directory: C:\Users\Valkyriez\Downloads\tam-center-main
 Total Files: 62
 
@@ -3791,7 +3791,7 @@ export default function StudentDashboard() {
     `w-full flex items-center justify-center md:justify-start gap-3 p-3 rounded-xl transition-all ${active ? 'bg-red-50 dark:bg-red-500/15 text-red-600 dark:text-red-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground'}`;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       <aside className="w-16 md:w-64 bg-surface border-r border-slate-200 dark:border-slate-800 flex flex-col z-20 transition-all">
         <Link href="/" className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-800 hidden md:block text-center hover:opacity-85 transition-opacity">
           <h2 className="text-xl font-black text-red-600 dark:text-red-500 flex items-center justify-center gap-2">
