@@ -6,7 +6,7 @@ export default function ConditionalHeader({ children }: { children: React.ReactN
   const pathname = usePathname();
 
   // Danh sách các đường dẫn (route) không muốn hiển thị Header
-  const hiddenRoutes = ['/admin-dashboard', '/staff-dashboard', '/teacher-dashboard', '/profile'];
+  const hiddenRoutes = ['/admin-dashboard', '/staff-dashboard', '/teacher-dashboard', '/dashboard', '/profile'];
 
   // Kiểm tra xem đường link hiện tại có bắt đầu bằng các route trên hay không
   const shouldHide = hiddenRoutes.some(route => pathname?.startsWith(route));

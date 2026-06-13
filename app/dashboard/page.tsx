@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { LayoutDashboard, ScrollText, CalendarDays, Search, UserCheck, Calendar, LogOut, Star, UserCog } from 'lucide-react';
+import { LayoutDashboard, ScrollText, CalendarDays, Search, UserCheck, Calendar, LogOut, Star, UserCog, BookOpen } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { fetchLogs } from '@/app/actions/logActions';
 import { logout } from '@/app/actions/authActions';
@@ -84,6 +84,12 @@ export default function StudentDashboard() {
   return (
     <div className="flex h-[calc(100vh-64px)] bg-background overflow-hidden">
       <aside className="w-16 md:w-64 bg-surface border-r border-slate-200 dark:border-slate-800 flex flex-col z-20 transition-all">
+        <Link href="/" className="p-4 md:p-5 border-b border-slate-100 dark:border-slate-800 hidden md:block text-center hover:opacity-85 transition-opacity">
+          <h2 className="text-xl font-black text-red-600 dark:text-red-500 flex items-center justify-center gap-2">
+            <BookOpen size={22} /> <span className="font-bold">TAM Center</span>
+          </h2>
+          <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-widest font-bold">Portal Học Viên</p>
+        </Link>
         <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 hidden md:block text-center">
           <div className="w-16 h-16 bg-red-100 dark:bg-red-500/15 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 font-black text-2xl mx-auto mb-3 overflow-hidden">
             {profile?.avatar_url ? (

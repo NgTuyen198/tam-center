@@ -142,10 +142,10 @@ export default function TeacherDashboard() {
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
       <aside className="w-64 bg-slate-900 dark:bg-slate-950 text-white flex flex-col shadow-xl z-20 hidden md:flex border-r border-transparent dark:border-slate-800">
-        <div className="p-6 pb-2 border-b border-slate-800">
+        <Link href="/" className="p-6 pb-2 border-b border-slate-800 block hover:opacity-85 transition-opacity">
           <h2 className="text-2xl font-black text-white flex items-center gap-2"><GraduationCap className="text-red-500" /> Giáo Viên</h2>
           <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-bold">Portal Giảng Dạy</p>
-        </div>
+        </Link>
         <div className="p-4 bg-slate-800/50 mx-4 mt-4 rounded-xl flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-red-600 text-white font-black text-lg flex items-center justify-center overflow-hidden shrink-0 border border-slate-700">
             {profile?.avatar_url ? (
