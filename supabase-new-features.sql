@@ -80,3 +80,12 @@ create policy "Auth doc tin nhan" on public.support_messages
 drop policy if exists "Auth ghi tin nhan" on public.support_messages;
 create policy "Auth ghi tin nhan" on public.support_messages
   for all to authenticated using (true) with check (true);
+
+-- Cho phép mọi người (kể cả khách ẩn danh) INSERT ticket và tin nhắn hỗ trợ
+drop policy if exists "Allow public insert ticket" on public.support_tickets;
+create policy "Allow public insert ticket" on public.support_tickets
+  for insert to public with check (true);
+
+drop policy if exists "Allow public insert message" on public.support_messages;
+create policy "Allow public insert message" on public.support_messages
+  for insert to public with check (true);

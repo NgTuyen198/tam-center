@@ -60,6 +60,12 @@ export default function SupportWidget() {
   const [busy, setBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // States cho hỗ trợ khách ẩn danh
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
   // Lấy user + vai trò hiện tại và tự động cập nhật khi trạng thái đăng nhập thay đổi
   useEffect(() => {
     const checkUser = async () => {
@@ -130,13 +136,31 @@ export default function SupportWidget() {
   }, [messages, view]);
 
   const handleCreate = async () => {
+    if (isGuest) {
+      if (!guestName.trim() || !guestPhone.trim()) {
+        alert('Vui lòng nhập đầy đủ Họ tên và Số điện thoại!');
+        return;
+      }
+    }
+
     setBusy(true);
-    const res = await createTicket(subject, category, firstMessage);
+    const res = await createTicket(
+      subject,
+      category,
+      firstMessage,
+      isGuest ? { name: guestName, phone: guestPhone, email: guestEmail } : undefined
+    );
     setBusy(false);
     if (res?.error) { alert(res.error); return; }
+    
     setSubject(''); setFirstMessage(''); setCategory('OTHER');
-    await loadTickets();
-    setView('HOME');
+    if (isGuest) {
+      setGuestName(''); setGuestPhone(''); setGuestEmail('');
+      setSubmitSuccess(true);
+    } else {
+      await loadTickets();
+      setView('HOME');
+    }
   };
 
   const handleReply = async () => {
@@ -206,7 +230,7 @@ export default function SupportWidget() {
           <div className="bg-gradient-to-br from-red-600 to-red-700 text-white p-5 shrink-0">
             <div className="flex items-center gap-2">
               {view !== 'HOME' && (
-                <button onClick={() => setView('HOME')} className="hover:bg-white/20 rounded-lg p-1 -ml-1"><ChevronLeft size={20} /></button>
+                <button onClick={() => { setView('HOME'); setSubmitSuccess(false); }} className="hover:bg-white/20 rounded-lg p-1 -ml-1"><ChevronLeft size={20} /></button>
               )}
               <h3 className="font-bold text-lg">
                 {view === 'HOME' ? 'Trung Tâm Hỗ Trợ' : view === 'NEW' ? 'Gửi Yêu Cầu Mới' : activeTicket?.subject}
@@ -235,12 +259,25 @@ export default function SupportWidget() {
               </div>
 
               {isGuest ? (
-                // Khách chưa đăng nhập: mời đăng nhập để gửi yêu cầu
+                // Khách chưa đăng nhập: Cho phép gửi yêu cầu ẩn danh trực tiếp!
                 <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl p-5 text-center">
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">Đăng nhập để gửi yêu cầu hỗ trợ và theo dõi phản hồi từ trung tâm.</p>
-                  <Link href="/login" className="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2.5 px-5 rounded-xl hover:bg-red-700 transition text-sm">
-                    <LogIn size={16} /> Đăng nhập để gửi yêu cầu
-                  </Link>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                    Gửi yêu cầu hỗ trợ trực tiếp không cần đăng nhập. Chúng tôi sẽ liên hệ phản hồi qua SĐT/Email của bạn.
+                  </p>
+                  <div className="flex flex-col gap-2.5">
+                    <button
+                      onClick={() => { setView('NEW'); setSubmitSuccess(false); }}
+                      className="inline-flex items-center justify-center gap-2 bg-red-600 text-white font-bold py-2.5 px-5 rounded-xl hover:bg-red-700 transition text-sm cursor-pointer"
+                    >
+                      <Plus size={16} /> Gửi yêu cầu hỗ trợ ẩn danh
+                    </button>
+                    <Link
+                      href="/login"
+                      className="inline-flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium py-2.5 px-5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition text-sm"
+                    >
+                      <LogIn size={16} /> Hoặc Đăng nhập tài khoản
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div>
@@ -279,26 +316,64 @@ export default function SupportWidget() {
           )}
 
           {/* NEW: form tạo ticket */}
-          {view === 'NEW' && !isGuest && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tiêu đề</label>
-                <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Tóm tắt vấn đề của bạn" className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500" />
+          {view === 'NEW' && (
+            submitSuccess ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-4">
+                <div className="w-16 h-16 bg-green-100 dark:bg-green-500/15 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center">
+                  <CheckCircle2 size={36} />
+                </div>
+                <h4 className="font-bold text-lg text-foreground">Gửi Yêu Cầu Thành Công!</h4>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
+                  Cảm ơn bạn! Trung tâm đã tiếp nhận thông tin hỗ trợ. Nhân viên vận hành sẽ liên hệ lại với bạn trong thời gian sớm nhất qua số điện thoại hoặc email đã cung cấp.
+                </p>
+                <button
+                  onClick={() => { setSubmitSuccess(false); setView('HOME'); }}
+                  className="bg-red-600 text-white font-bold py-2.5 px-6 rounded-xl hover:bg-red-700 transition text-sm"
+                >
+                  Quay lại trang chủ
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Loại vấn đề</label>
-                <select value={category} onChange={e => setCategory(e.target.value as TicketCategory)} className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500">
-                  {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-                </select>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                {isGuest && (
+                  <div className="space-y-4 p-4 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800/85 rounded-2xl">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Thông tin liên hệ</p>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Họ tên khách <span className="text-red-500">*</span></label>
+                      <input value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="Nhập họ và tên của bạn" className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Số điện thoại <span className="text-red-500">*</span></label>
+                      <input value={guestPhone} onChange={e => setGuestPhone(e.target.value)} placeholder="Nhập số điện thoại để liên hệ" className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email (Không bắt buộc)</label>
+                      <input value={guestEmail} onChange={e => setGuestEmail(e.target.value)} placeholder="Nhập email nếu có" className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 text-sm" />
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-4">
+                  {isGuest && <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mt-2">Nội dung yêu cầu</p>}
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Tiêu đề</label>
+                    <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Tóm tắt vấn đề cần hỗ trợ" className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 text-sm" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Loại vấn đề</label>
+                    <select value={category} onChange={e => setCategory(e.target.value as TicketCategory)} className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 text-sm">
+                      {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Nội dung chi tiết</label>
+                    <textarea rows={isGuest ? 3 : 5} value={firstMessage} onChange={e => setFirstMessage(e.target.value)} placeholder="Mô tả chi tiết vấn đề bạn cần trung tâm giải đáp..." className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 resize-none text-sm" />
+                  </div>
+                </div>
+                <button onClick={handleCreate} disabled={busy} className="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition disabled:bg-red-400 flex items-center justify-center gap-2 mt-2">
+                  {busy ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />} Gửi yêu cầu hỗ trợ
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">Nội dung</label>
-                <textarea rows={5} value={firstMessage} onChange={e => setFirstMessage(e.target.value)} placeholder="Mô tả chi tiết vấn đề bạn gặp phải..." className="w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-red-500 resize-none" />
-              </div>
-              <button onClick={handleCreate} disabled={busy} className="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition disabled:bg-red-400 flex items-center justify-center gap-2">
-                {busy ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />} Gửi yêu cầu
-              </button>
-            </div>
+            )
           )}
 
           {/* THREAD: hội thoại */}

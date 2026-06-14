@@ -1,22 +1,54 @@
 'use server'
+import { createClient } from '@/utils/supabase/server'
 import { createLog } from './logActions'
 import { revalidatePath } from 'next/cache'
 import { requireAuth, requireRole } from '@/lib/auth'
 import type { TicketCategory } from '@/lib/types'
 
 /**
- * Người dùng (học viên/giáo viên) tạo phiếu hỗ trợ mới kèm tin nhắn đầu tiên.
+ * Người dùng tạo phiếu hỗ trợ mới kèm tin nhắn đầu tiên (chấp nhận cả khách vãng lai/ẩn danh).
  */
-export async function createTicket(subject: string, category: TicketCategory, message: string) {
-  const { userId, role, supabase } = await requireAuth()
+export async function createTicket(
+  subject: string,
+  category: TicketCategory,
+  message: string,
+  guestInfo?: { name: string; phone: string; email?: string }
+) {
+  const supabase = await createClient()
+  let userId: string
+  let role: string = 'STUDENT'
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user) {
+    userId = user.id
+    const { data: profile } = await supabase.from('profiles').select('role, status').eq('id', user.id).single()
+    if (profile?.status === 'BANNED') throw new Error('Tài khoản của bạn đã bị khóa.')
+    role = profile?.role || 'STUDENT'
+  } else {
+    // Với khách ẩn danh: Lấy profile bất kỳ để thoả mãn khóa ngoại (foreign key constraint)
+    const { data: profiles, error: pErr } = await supabase.from('profiles').select('id').limit(1)
+    if (pErr || !profiles || profiles.length === 0) {
+      return { error: 'Không thể gửi yêu cầu hỗ trợ (hệ thống thiếu dữ liệu hồ sơ gốc).' }
+    }
+    userId = profiles[0].id
+    role = 'STUDENT'
+  }
 
   if (!subject.trim() || !message.trim()) {
     return { error: 'Vui lòng nhập tiêu đề và nội dung cần hỗ trợ.' }
   }
 
+  let finalSubject = subject.trim()
+  let finalMessage = message.trim()
+
+  if (!user && guestInfo) {
+    finalSubject = `[ẨN DANH] ${guestInfo.name} (${guestInfo.phone}): ${subject.trim()}`
+    finalMessage = `Họ tên khách: ${guestInfo.name}\nSố điện thoại: ${guestInfo.phone}\nEmail: ${guestInfo.email || 'Không cung cấp'}\n\nNội dung cần hỗ trợ:\n${message.trim()}`
+  }
+
   const { data: ticket, error } = await supabase
     .from('support_tickets')
-    .insert({ user_id: userId, subject: subject.trim(), category, status: 'OPEN' })
+    .insert({ user_id: userId, subject: finalSubject, category, status: 'OPEN' })
     .select()
     .single()
 
@@ -26,10 +58,13 @@ export async function createTicket(subject: string, category: TicketCategory, me
     ticket_id: ticket.id,
     sender_id: userId,
     sender_role: role,
-    message: message.trim(),
+    message: finalMessage,
   })
 
-  await createLog('CREATE', `Đã gửi yêu cầu hỗ trợ: "${subject.trim()}"`)
+  if (user) {
+    await createLog('CREATE', `Đã gửi yêu cầu hỗ trợ: "${subject.trim()}"`)
+  }
+  
   revalidatePath('/staff-dashboard')
   return { success: true, ticketId: ticket.id }
 }
