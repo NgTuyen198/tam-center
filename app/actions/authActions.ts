@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { createLog } from './logActions'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -45,12 +46,15 @@ export async function login(formData: FormData) {
       return { error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ trung tâm.' }
     }
 
+    revalidatePath('/', 'layout')
+
     const role = profile?.role || 'STUDENT'
     if (role === 'TEACHER') redirect('/teacher-dashboard')
     if (role === 'STAFF') redirect('/staff-dashboard')
     if (role === 'ADMIN') redirect('/admin-dashboard')
   }
 
+  revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
 
@@ -84,11 +88,15 @@ export async function verifyOtpAction(email: string, token: string, type: 'signu
   if (type === 'signup') {
     if (data?.user) {
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+      
+      revalidatePath('/', 'layout')
+      
       const role = profile?.role || 'STUDENT'
       if (role === 'TEACHER') redirect('/teacher-dashboard')
       if (role === 'STAFF') redirect('/staff-dashboard')
       if (role === 'ADMIN') redirect('/admin-dashboard')
     }
+    revalidatePath('/', 'layout')
     redirect('/dashboard')
   }
   return { success: true }
@@ -122,5 +130,6 @@ export async function updatePassword(password: string) {
 export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
+  revalidatePath('/', 'layout')
   redirect('/login')
 }
