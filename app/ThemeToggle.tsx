@@ -5,14 +5,35 @@ import { useTheme } from './ThemeProvider';
 
 export default function ThemeToggle({
   className = '',
+  showLabel = false,
 }: {
   className?: string;
+  showLabel?: boolean;
 }) {
   const { theme, toggleTheme, mounted } = useTheme();
 
   // Trước khi mount, render trạng thái tất định (light) để khớp với HTML từ server,
   // tránh lỗi hydration mismatch.
   const isDark = mounted && theme === 'dark';
+
+  if (showLabel) {
+    return (
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className={`w-full flex items-center justify-center md:justify-start gap-3 px-4 py-3 rounded-xl transition-all font-medium text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent ${className}`}
+      >
+        {isDark ? (
+          <Sun size={20} className="text-yellow-500 shrink-0" />
+        ) : (
+          <Moon size={20} className="text-indigo-400 dark:text-indigo-300 shrink-0" />
+        )}
+        <span className="hidden md:block text-sm">
+          {isDark ? 'Giao diện: Sáng' : 'Giao diện: Tối'}
+        </span>
+      </button>
+    );
+  }
 
   return (
     <button

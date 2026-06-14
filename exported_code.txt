@@ -1,7 +1,7 @@
 ================================================================================
 CODEBASE EXPORT SUMMARY
 ================================================================================
-Generated on: 2026-06-13T08:38:14.808Z
+Generated on: 2026-06-14T05:50:53.060Z
 Export Directory: C:\Users\Valkyriez\Downloads\tam-center-main
 Total Files: 62
 
@@ -221,11 +221,10 @@ export async function login(formData: FormData) {
     return { error: 'Tài khoản hoặc mật khẩu không chính xác!' }
   }
 
-  // Chặn tài khoản đã bị khóa: kiểm tra status rồi đăng xuất nếu BANNED
   if (data.user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('status')
+      .select('role, status')
       .eq('id', data.user.id)
       .single()
 
@@ -233,9 +232,14 @@ export async function login(formData: FormData) {
       await supabase.auth.signOut()
       return { error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ trung tâm.' }
     }
+
+    const role = profile?.role || 'STUDENT'
+    if (role === 'TEACHER') redirect('/teacher-dashboard')
+    if (role === 'STAFF') redirect('/staff-dashboard')
+    if (role === 'ADMIN') redirect('/admin-dashboard')
   }
 
-  await handleRoleRedirect(supabase)
+  redirect('/dashboard')
 }
 
 export async function signup(formData: FormData) {
@@ -260,13 +264,20 @@ export async function signup(formData: FormData) {
 
 export async function verifyOtpAction(email: string, token: string, type: 'signup' | 'recovery') {
   const supabase = await createClient()
-  const { error } = await supabase.auth.verifyOtp({ email, token, type })
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type })
   
   if (error) return { error: "Mã OTP không hợp lệ hoặc đã hết hạn." }
   
   // Nếu là OTP đăng ký, xác thực xong cho login luôn
   if (type === 'signup') {
-     await handleRoleRedirect(supabase) 
+    if (data?.user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+      const role = profile?.role || 'STUDENT'
+      if (role === 'TEACHER') redirect('/teacher-dashboard')
+      if (role === 'STAFF') redirect('/staff-dashboard')
+      if (role === 'ADMIN') redirect('/admin-dashboard')
+    }
+    redirect('/dashboard')
   }
   return { success: true }
 }
@@ -280,13 +291,20 @@ export async function resetPassword(email: string) {
 
 export async function updatePassword(password: string) {
   const supabase = await createClient()
-  const { error } = await supabase.auth.updateUser({ password })
+  const { data, error } = await supabase.auth.updateUser({ password })
   if (error) return { error: error.message }
   
   // Ghi log đổi mật khẩu
   await createLog('SYSTEM', 'Đã đổi mật khẩu mới thông qua OTP');
 
-  await handleRoleRedirect(supabase)
+  if (data?.user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+    const role = profile?.role || 'STUDENT'
+    if (role === 'TEACHER') redirect('/teacher-dashboard')
+    if (role === 'STAFF') redirect('/staff-dashboard')
+    if (role === 'ADMIN') redirect('/admin-dashboard')
+  }
+  redirect('/dashboard')
 }
 
 export async function logout() {
@@ -1393,9 +1411,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('USERS')} className={navBtn(activeTab === 'USERS')}><Users size={20} /> Quản Lý Tài Khoản</button>
           <button onClick={() => setActiveTab('LOGS')} className={navBtn(activeTab === 'LOGS')}><ScrollText size={20} /> Dấu Vết Hệ Thống</button>
         </nav>
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 border-t border-slate-800 space-y-2">
           <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
-          <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-400 hover:!bg-slate-800 hover:!text-white" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>
       </aside>
@@ -3817,7 +3835,7 @@ export default function StudentDashboard() {
         </nav>
         <div className="p-2 md:p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <Link href="/profile" className="w-full flex items-center justify-center md:justify-start gap-3 p-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground rounded-xl transition-all font-medium"><UserCog size={20} /> <span className="hidden md:block">Hồ Sơ Cá Nhân</span></Link>
-          <div className="hidden md:flex justify-center"><ThemeToggle /></div>
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-500 dark:!text-slate-400 hover:!bg-slate-100 dark:hover:!bg-slate-800 hover:!text-foreground !p-3" />
           <form action={logout}>
             <button type="submit" className="w-full flex items-center justify-center md:justify-start gap-3 p-3 text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> <span className="hidden md:block">Đăng xuất</span></button>
           </form>
@@ -4154,14 +4172,7 @@ export default async function RootLayout({
 }>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  let dashboardLink = '/dashboard';
-  if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role === 'TEACHER') dashboardLink = '/teacher-dashboard';
-    else if (profile?.role === 'STAFF') dashboardLink = '/staff-dashboard';
-    else if (profile?.role === 'ADMIN') dashboardLink = '/admin-dashboard';
-  }
+  const dashboardLink = '/dashboard';
 
   return (
     <html lang="vi" suppressHydrationWarning>
@@ -4233,7 +4244,7 @@ FILE: app\login\page.tsx
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { login, signup, verifyOtpAction, resetPassword, updatePassword } from '@/app/actions/authActions';
 
 type ViewState = 'LOGIN' | 'SIGNUP' | 'FORGOT_PASSWORD' | 'VERIFY_SIGNUP_OTP' | 'VERIFY_RECOVERY_OTP' | 'UPDATE_PASSWORD';
@@ -4325,7 +4336,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4 bg-background">
+    <div className="min-h-[85vh] flex items-center justify-center p-4 bg-background relative">
+      {/* Màn hình chờ đăng nhập/chuyển hướng cao cấp */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-slate-950/60 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface p-8 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center gap-4 text-center max-w-xs w-full zoom-in duration-200">
+            <div className="relative flex items-center justify-center">
+              <Loader2 className="animate-spin text-red-600 dark:text-red-500" size={44} />
+            </div>
+            <div>
+              <p className="text-foreground font-black text-lg">
+                {view === 'LOGIN' ? 'Đang Đăng Nhập' :
+                 view === 'SIGNUP' ? 'Đang Tạo Tài Khoản' :
+                 'Đang Xử Lý'}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {view === 'LOGIN' ? 'Hệ thống đang xác thực & chuyển hướng...' :
+                 view === 'SIGNUP' ? 'Vui lòng chờ giây lát...' :
+                 'Vui lòng chờ trong giây lát...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 text-red-600 dark:text-red-500 mb-6">
           <BookOpen size={32} />
@@ -5582,7 +5616,7 @@ export default function StaffDashboard() {
         </nav>
         <div className="p-4 border-t border-slate-800 space-y-3">
           <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
-          <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-400 hover:!bg-slate-800 hover:!text-white" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>
       </aside>
@@ -5611,13 +5645,13 @@ export default function StaffDashboard() {
                           <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">{reg.profiles?.phone}</div>
                         </div>
                         <div className="text-right">
-                          <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(reg.course_variants)?.learning_mode}</span>
+                          <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(reg.course_variants)?.learning_mode === 'GROUP' ? 'HỌC NHÓM' : '1 KÈM 1'}</span>
                         </div>
                       </div>
 
                       <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl mb-4 border border-slate-100 dark:border-slate-700">
                         <div className="font-bold text-foreground text-sm">{(reg.course_variants?.courses)?.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Gói: {reg.package_type} - Tiền: <span className="text-red-600 dark:text-red-400 font-bold">{formatVND(reg.total_amount)}</span></div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Gói: {reg.package_type === 'FULL_PACKAGE' ? 'Trọn khóa' : 'Lẻ buổi'} - Tiền: <span className="text-red-600 dark:text-red-400 font-bold">{formatVND(reg.total_amount)}</span></div>
                       </div>
 
                       <button onClick={() => openAssignModal(reg)} className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-red-700">✍️ Xếp Lớp Thủ Công</button>
@@ -6185,9 +6219,9 @@ export default function TeacherDashboard() {
           <button onClick={() => setActiveTab('SCHEDULES')} className={navBtn(activeTab === 'SCHEDULES')}><CalendarDays size={20} /> Lịch Dạy & Điểm Danh</button>
           <button onClick={() => setActiveTab('LOGS')} className={navBtn(activeTab === 'LOGS')}><ScrollText size={20} /> Nhật Ký Cá Nhân</button>
         </nav>
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 border-t border-slate-800 space-y-2">
           <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
-          <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-400 hover:!bg-slate-800 hover:!text-white" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>
       </aside>
@@ -6287,7 +6321,7 @@ export default function TeacherDashboard() {
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <h3 className="font-bold text-foreground">{(cls.course_variants?.courses as any)?.name}</h3>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(cls.course_variants as any)?.learning_mode}</span>
+                      <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(cls.course_variants as any)?.learning_mode === 'GROUP' ? 'HỌC NHÓM' : '1 KÈM 1'}</span>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Sĩ số gom được: <span className="font-bold text-red-600 dark:text-red-400">{cls.current_students}/{cls.max_students}</span> học viên</p>
                     <form action={async () => { try { await acceptClass(cls.id); fetchData(); } catch (err) { alert('Lỗi: ' + (err as Error).message); } }}>
@@ -6470,14 +6504,35 @@ import { useTheme } from './ThemeProvider';
 
 export default function ThemeToggle({
   className = '',
+  showLabel = false,
 }: {
   className?: string;
+  showLabel?: boolean;
 }) {
   const { theme, toggleTheme, mounted } = useTheme();
 
   // Trước khi mount, render trạng thái tất định (light) để khớp với HTML từ server,
   // tránh lỗi hydration mismatch.
   const isDark = mounted && theme === 'dark';
+
+  if (showLabel) {
+    return (
+      <button
+        type="button"
+        onClick={toggleTheme}
+        className={`w-full flex items-center justify-center md:justify-start gap-3 px-4 py-3 rounded-xl transition-all font-medium text-slate-400 hover:bg-slate-800 hover:text-white border border-transparent ${className}`}
+      >
+        {isDark ? (
+          <Sun size={20} className="text-yellow-500 shrink-0" />
+        ) : (
+          <Moon size={20} className="text-indigo-400 dark:text-indigo-300 shrink-0" />
+        )}
+        <span className="hidden md:block text-sm">
+          {isDark ? 'Giao diện: Sáng' : 'Giao diện: Tối'}
+        </span>
+      </button>
+    );
+  }
 
   return (
     <button

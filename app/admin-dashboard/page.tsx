@@ -349,9 +349,9 @@ export default function AdminDashboard() {
           <button onClick={() => setActiveTab('USERS')} className={navBtn(activeTab === 'USERS')}><Users size={20} /> Quản Lý Tài Khoản</button>
           <button onClick={() => setActiveTab('LOGS')} className={navBtn(activeTab === 'LOGS')}><ScrollText size={20} /> Dấu Vết Hệ Thống</button>
         </nav>
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 border-t border-slate-800 space-y-2">
           <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
-          <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-400 hover:!bg-slate-800 hover:!text-white" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>
       </aside>

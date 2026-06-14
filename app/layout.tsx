@@ -31,14 +31,7 @@ export default async function RootLayout({
 }>) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
-  let dashboardLink = '/dashboard';
-  if (user) {
-    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-    if (profile?.role === 'TEACHER') dashboardLink = '/teacher-dashboard';
-    else if (profile?.role === 'STAFF') dashboardLink = '/staff-dashboard';
-    else if (profile?.role === 'ADMIN') dashboardLink = '/admin-dashboard';
-  }
+  const dashboardLink = '/dashboard';
 
   return (
     <html lang="vi" suppressHydrationWarning>

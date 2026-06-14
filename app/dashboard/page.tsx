@@ -108,7 +108,7 @@ export default function StudentDashboard() {
         </nav>
         <div className="p-2 md:p-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <Link href="/profile" className="w-full flex items-center justify-center md:justify-start gap-3 p-3 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-foreground rounded-xl transition-all font-medium"><UserCog size={20} /> <span className="hidden md:block">Hồ Sơ Cá Nhân</span></Link>
-          <div className="hidden md:flex justify-center"><ThemeToggle /></div>
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-500 dark:!text-slate-400 hover:!bg-slate-100 dark:hover:!bg-slate-800 hover:!text-foreground !p-3" />
           <form action={logout}>
             <button type="submit" className="w-full flex items-center justify-center md:justify-start gap-3 p-3 text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> <span className="hidden md:block">Đăng xuất</span></button>
           </form>

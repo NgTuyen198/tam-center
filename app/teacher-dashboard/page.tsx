@@ -164,9 +164,9 @@ export default function TeacherDashboard() {
           <button onClick={() => setActiveTab('SCHEDULES')} className={navBtn(activeTab === 'SCHEDULES')}><CalendarDays size={20} /> Lịch Dạy & Điểm Danh</button>
           <button onClick={() => setActiveTab('LOGS')} className={navBtn(activeTab === 'LOGS')}><ScrollText size={20} /> Nhật Ký Cá Nhân</button>
         </nav>
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 border-t border-slate-800 space-y-2">
           <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
-          <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-400 hover:!bg-slate-800 hover:!text-white" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>
       </aside>
@@ -266,7 +266,7 @@ export default function TeacherDashboard() {
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       <h3 className="font-bold text-foreground">{(cls.course_variants?.courses as any)?.name}</h3>
                       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                      <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(cls.course_variants as any)?.learning_mode}</span>
+                      <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(cls.course_variants as any)?.learning_mode === 'GROUP' ? 'HỌC NHÓM' : '1 KÈM 1'}</span>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">Sĩ số gom được: <span className="font-bold text-red-600 dark:text-red-400">{cls.current_students}/{cls.max_students}</span> học viên</p>
                     <form action={async () => { try { await acceptClass(cls.id); fetchData(); } catch (err) { alert('Lỗi: ' + (err as Error).message); } }}>

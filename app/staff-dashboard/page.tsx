@@ -255,7 +255,7 @@ export default function StaffDashboard() {
         </nav>
         <div className="p-4 border-t border-slate-800 space-y-3">
           <Link href="/profile" className="w-full flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all font-medium"><UserCog size={20} /> Hồ Sơ Cá Nhân</Link>
-          <ThemeToggle className="!bg-slate-800 !border-slate-700 !text-slate-300 hover:!bg-slate-700" />
+          <ThemeToggle showLabel className="!bg-transparent !border-transparent !text-slate-400 hover:!bg-slate-800 hover:!text-white" />
           <form action={logout}><button type="submit" className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-slate-800 rounded-xl transition-all font-medium"><LogOut size={20} /> Đăng xuất</button></form>
         </div>
       </aside>
@@ -284,13 +284,13 @@ export default function StaffDashboard() {
                           <div className="text-sm text-slate-500 dark:text-slate-400 font-medium">{reg.profiles?.phone}</div>
                         </div>
                         <div className="text-right">
-                          <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(reg.course_variants)?.learning_mode}</span>
+                          <span className="bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">{(reg.course_variants)?.learning_mode === 'GROUP' ? 'HỌC NHÓM' : '1 KÈM 1'}</span>
                         </div>
                       </div>
 
                       <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl mb-4 border border-slate-100 dark:border-slate-700">
                         <div className="font-bold text-foreground text-sm">{(reg.course_variants?.courses)?.name}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Gói: {reg.package_type} - Tiền: <span className="text-red-600 dark:text-red-400 font-bold">{formatVND(reg.total_amount)}</span></div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Gói: {reg.package_type === 'FULL_PACKAGE' ? 'Trọn khóa' : 'Lẻ buổi'} - Tiền: <span className="text-red-600 dark:text-red-400 font-bold">{formatVND(reg.total_amount)}</span></div>
                       </div>
 
                       <button onClick={() => openAssignModal(reg)} className="w-full bg-red-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-md hover:bg-red-700">✍️ Xếp Lớp Thủ Công</button>

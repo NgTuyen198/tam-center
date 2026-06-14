@@ -33,11 +33,10 @@ export async function login(formData: FormData) {
     return { error: 'Tài khoản hoặc mật khẩu không chính xác!' }
   }
 
-  // Chặn tài khoản đã bị khóa: kiểm tra status rồi đăng xuất nếu BANNED
   if (data.user) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('status')
+      .select('role, status')
       .eq('id', data.user.id)
       .single()
 
@@ -45,9 +44,14 @@ export async function login(formData: FormData) {
       await supabase.auth.signOut()
       return { error: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ trung tâm.' }
     }
+
+    const role = profile?.role || 'STUDENT'
+    if (role === 'TEACHER') redirect('/teacher-dashboard')
+    if (role === 'STAFF') redirect('/staff-dashboard')
+    if (role === 'ADMIN') redirect('/admin-dashboard')
   }
 
-  await handleRoleRedirect(supabase)
+  redirect('/dashboard')
 }
 
 export async function signup(formData: FormData) {
@@ -72,13 +76,20 @@ export async function signup(formData: FormData) {
 
 export async function verifyOtpAction(email: string, token: string, type: 'signup' | 'recovery') {
   const supabase = await createClient()
-  const { error } = await supabase.auth.verifyOtp({ email, token, type })
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type })
   
   if (error) return { error: "Mã OTP không hợp lệ hoặc đã hết hạn." }
   
   // Nếu là OTP đăng ký, xác thực xong cho login luôn
   if (type === 'signup') {
-     await handleRoleRedirect(supabase) 
+    if (data?.user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+      const role = profile?.role || 'STUDENT'
+      if (role === 'TEACHER') redirect('/teacher-dashboard')
+      if (role === 'STAFF') redirect('/staff-dashboard')
+      if (role === 'ADMIN') redirect('/admin-dashboard')
+    }
+    redirect('/dashboard')
   }
   return { success: true }
 }
@@ -92,13 +103,20 @@ export async function resetPassword(email: string) {
 
 export async function updatePassword(password: string) {
   const supabase = await createClient()
-  const { error } = await supabase.auth.updateUser({ password })
+  const { data, error } = await supabase.auth.updateUser({ password })
   if (error) return { error: error.message }
   
   // Ghi log đổi mật khẩu
   await createLog('SYSTEM', 'Đã đổi mật khẩu mới thông qua OTP');
 
-  await handleRoleRedirect(supabase)
+  if (data?.user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single()
+    const role = profile?.role || 'STUDENT'
+    if (role === 'TEACHER') redirect('/teacher-dashboard')
+    if (role === 'STAFF') redirect('/staff-dashboard')
+    if (role === 'ADMIN') redirect('/admin-dashboard')
+  }
+  redirect('/dashboard')
 }
 
 export async function logout() {

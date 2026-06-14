@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { login, signup, verifyOtpAction, resetPassword, updatePassword } from '@/app/actions/authActions';
 
 type ViewState = 'LOGIN' | 'SIGNUP' | 'FORGOT_PASSWORD' | 'VERIFY_SIGNUP_OTP' | 'VERIFY_RECOVERY_OTP' | 'UPDATE_PASSWORD';
@@ -94,7 +94,30 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[85vh] flex items-center justify-center p-4 bg-background">
+    <div className="min-h-[85vh] flex items-center justify-center p-4 bg-background relative">
+      {/* Màn hình chờ đăng nhập/chuyển hướng cao cấp */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-slate-950/60 dark:bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-surface p-8 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col items-center gap-4 text-center max-w-xs w-full zoom-in duration-200">
+            <div className="relative flex items-center justify-center">
+              <Loader2 className="animate-spin text-red-600 dark:text-red-500" size={44} />
+            </div>
+            <div>
+              <p className="text-foreground font-black text-lg">
+                {view === 'LOGIN' ? 'Đang Đăng Nhập' :
+                 view === 'SIGNUP' ? 'Đang Tạo Tài Khoản' :
+                 'Đang Xử Lý'}
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {view === 'LOGIN' ? 'Hệ thống đang xác thực & chuyển hướng...' :
+                 view === 'SIGNUP' ? 'Vui lòng chờ giây lát...' :
+                 'Vui lòng chờ trong giây lát...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-md">
         <Link href="/" className="flex items-center justify-center gap-2 text-red-600 dark:text-red-500 mb-6">
           <BookOpen size={32} />
