@@ -16,7 +16,7 @@ import type { ActivityLog } from '@/lib/types';
 const supabase = createClient();
 
 export default function StudentDashboard() {
-  const { checking } = useRoleGuard(['STUDENT']);
+  const { checking, user, profile: authProfile } = useRoleGuard(['STUDENT']);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SCHEDULES' | 'LOGS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
 
@@ -36,11 +36,8 @@ export default function StudentDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile({ ...prof, email: user.email });
+    if (authProfile) setProfile({ ...authProfile, email: user.email });
 
     if (activeTab === 'OVERVIEW') {
       const { data: regs } = await supabase.from('registrations').select(`*, course_variants(learning_mode, courses(name))`).eq('student_id', user.id).eq('status', 'PENDING');
@@ -65,7 +62,7 @@ export default function StudentDashboard() {
       setLogs(logData as ActivityLog[]);
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, user, authProfile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) fetchData(); }, [checking, fetchData]);

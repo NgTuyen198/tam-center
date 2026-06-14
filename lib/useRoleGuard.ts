@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 import type { UserRole } from './types';
 
 const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
@@ -15,47 +16,53 @@ const supabase = createClient();
 
 /**
  * Bảo vệ trang dashboard phía client: kiểm tra đăng nhập + đúng vai trò.
- * Nếu sai vai trò sẽ điều hướng về dashboard tương ứng của người dùng.
- * Trả về `checking` để trang hiển thị màn hình chờ trong lúc xác thực.
+ * Trả về `checking`, `user`, và `profile` để trang sử dụng lại, tránh truy vấn trùng lặp.
  */
 export function useRoleGuard(allowedRoles: UserRole[]) {
   const [checking, setChecking] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
     let active = true;
 
     (async () => {
       const {
-        data: { user },
+        data: { user: u },
       } = await supabase.auth.getUser();
 
-      if (!user) {
-        window.location.href = '/login';
+      if (!u) {
+        router.replace('/login');
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: prof } = await supabase
         .from('profiles')
-        .select('role, status')
-        .eq('id', user.id)
+        .select('*')
+        .eq('id', u.id)
         .single();
 
-      const role = (profile?.role as UserRole) || 'STUDENT';
+      const role = (prof?.role as UserRole) || 'STUDENT';
 
       // Tài khoản bị khóa -> đăng xuất
-      if (profile?.status === 'BANNED') {
+      if (prof?.status === 'BANNED') {
         await supabase.auth.signOut();
-        window.location.href = '/login';
+        router.replace('/login');
         return;
       }
 
       // Sai vai trò -> chuyển về dashboard đúng của họ
       if (!allowedRoles.includes(role)) {
-        window.location.href = DASHBOARD_BY_ROLE[role] || '/dashboard';
+        router.replace(DASHBOARD_BY_ROLE[role] || '/dashboard');
         return;
       }
 
-      if (active) setChecking(false);
+      if (active) {
+        setUser(u);
+        setProfile(prof);
+        setChecking(false);
+      }
     })();
 
     return () => {
@@ -64,5 +71,5 @@ export function useRoleGuard(allowedRoles: UserRole[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { checking };
+  return { checking, user, profile };
 }

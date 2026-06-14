@@ -18,7 +18,7 @@ import type { ActivityLog, TeacherReview } from '@/lib/types';
 const supabase = createClient();
 
 export default function TeacherDashboard() {
-  const { checking } = useRoleGuard(['TEACHER']);
+  const { checking, user, profile: authProfile } = useRoleGuard(['TEACHER']);
   const [activeTab, setActiveTab] = useState<'CLASSES' | 'SCHEDULES' | 'LOGS'>('CLASSES');
   const [loading, setLoading] = useState(true);
 
@@ -45,11 +45,8 @@ export default function TeacherDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile(prof);
+    if (authProfile) setProfile(authProfile);
 
     if (activeTab === 'CLASSES') {
       const { data: avail } = await supabase
@@ -88,7 +85,7 @@ export default function TeacherDashboard() {
       setLogs(logData as ActivityLog[]);
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, user, authProfile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) fetchData(); }, [checking, fetchData]);

@@ -24,7 +24,7 @@ const inputClass =
   "w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors";
 
 export default function StaffDashboard() {
-  const { checking } = useRoleGuard(['STAFF', 'ADMIN']);
+  const { checking, user, profile: authProfile } = useRoleGuard(['STAFF', 'ADMIN']);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'COURSES' | 'SUPPORT' | 'LOGS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
 
@@ -72,11 +72,8 @@ export default function StaffDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile(prof);
+    if (authProfile) setProfile(authProfile);
 
     if (activeTab === 'OVERVIEW') {
       const { data: regs } = await supabase.from('registrations').select(`*, profiles(full_name, phone), course_variants(learning_mode, courses(name))`).eq('status', 'PENDING').order('created_at', { ascending: true });
@@ -90,7 +87,7 @@ export default function StaffDashboard() {
       setLogs(logData as ActivityLog[]);
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, user, authProfile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) fetchData(); }, [checking, fetchData]);

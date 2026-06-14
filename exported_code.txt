@@ -1,7 +1,7 @@
 ================================================================================
 CODEBASE EXPORT SUMMARY
 ================================================================================
-Generated on: 2026-06-14T06:05:31.447Z
+Generated on: 2026-06-14T06:11:20.070Z
 Export Directory: C:\Users\Valkyriez\Downloads\tam-center-main
 Total Files: 62
 
@@ -1131,7 +1131,7 @@ const PAID_STATUSES = ['PENDING', 'PAID', 'ASSIGNED_CLASS'];
 type AnyRow = any;
 
 export default function AdminDashboard() {
-  const { checking } = useRoleGuard(['ADMIN']);
+  const { checking, user, profile } = useRoleGuard(['ADMIN']);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'LOGS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1207,12 +1207,9 @@ export default function AdminDashboard() {
   const checkAuthAndFetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setCurrentUser(user);
-
-      const { data: myProf } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (myProf) setMyProfile(myProf as Profile);
+      if (profile) setMyProfile(profile as Profile);
 
       if (activeTab === 'OVERVIEW') {
         const [{ data: regData }, { data: profData }, { data: clsData }, { data: revData }] = await Promise.all([
@@ -1237,7 +1234,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, user, profile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) checkAuthAndFetch(); }, [checking, checkAuthAndFetch]);
@@ -3862,7 +3859,7 @@ import type { ActivityLog } from '@/lib/types';
 const supabase = createClient();
 
 export default function StudentDashboard() {
-  const { checking } = useRoleGuard(['STUDENT']);
+  const { checking, user, profile: authProfile } = useRoleGuard(['STUDENT']);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'SCHEDULES' | 'LOGS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
 
@@ -3882,11 +3879,8 @@ export default function StudentDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile({ ...prof, email: user.email });
+    if (authProfile) setProfile({ ...authProfile, email: user.email });
 
     if (activeTab === 'OVERVIEW') {
       const { data: regs } = await supabase.from('registrations').select(`*, course_variants(learning_mode, courses(name))`).eq('student_id', user.id).eq('status', 'PENDING');
@@ -3911,7 +3905,7 @@ export default function StudentDashboard() {
       setLogs(logData as ActivityLog[]);
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, user, authProfile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) fetchData(); }, [checking, fetchData]);
@@ -5504,7 +5498,7 @@ const inputClass =
   "w-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-foreground rounded-xl px-4 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-colors";
 
 export default function StaffDashboard() {
-  const { checking } = useRoleGuard(['STAFF', 'ADMIN']);
+  const { checking, user, profile: authProfile } = useRoleGuard(['STAFF', 'ADMIN']);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'COURSES' | 'SUPPORT' | 'LOGS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
 
@@ -5552,11 +5546,8 @@ export default function StaffDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile(prof);
+    if (authProfile) setProfile(authProfile);
 
     if (activeTab === 'OVERVIEW') {
       const { data: regs } = await supabase.from('registrations').select(`*, profiles(full_name, phone), course_variants(learning_mode, courses(name))`).eq('status', 'PENDING').order('created_at', { ascending: true });
@@ -5570,7 +5561,7 @@ export default function StaffDashboard() {
       setLogs(logData as ActivityLog[]);
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, user, authProfile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) fetchData(); }, [checking, fetchData]);
@@ -6192,7 +6183,7 @@ import type { ActivityLog, TeacherReview } from '@/lib/types';
 const supabase = createClient();
 
 export default function TeacherDashboard() {
-  const { checking } = useRoleGuard(['TEACHER']);
+  const { checking, user, profile: authProfile } = useRoleGuard(['TEACHER']);
   const [activeTab, setActiveTab] = useState<'CLASSES' | 'SCHEDULES' | 'LOGS'>('CLASSES');
   const [loading, setLoading] = useState(true);
 
@@ -6219,11 +6210,8 @@ export default function TeacherDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-
-    const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    setProfile(prof);
+    if (authProfile) setProfile(authProfile);
 
     if (activeTab === 'CLASSES') {
       const { data: avail } = await supabase
@@ -6262,7 +6250,7 @@ export default function TeacherDashboard() {
       setLogs(logData as ActivityLog[]);
     }
     setLoading(false);
-  }, [activeTab]);
+  }, [activeTab, user, authProfile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) fetchData(); }, [checking, fetchData]);
@@ -7120,6 +7108,7 @@ FILE: lib\useRoleGuard.ts
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 import type { UserRole } from './types';
 
 const DASHBOARD_BY_ROLE: Record<UserRole, string> = {
@@ -7133,47 +7122,53 @@ const supabase = createClient();
 
 /**
  * Bảo vệ trang dashboard phía client: kiểm tra đăng nhập + đúng vai trò.
- * Nếu sai vai trò sẽ điều hướng về dashboard tương ứng của người dùng.
- * Trả về `checking` để trang hiển thị màn hình chờ trong lúc xác thực.
+ * Trả về `checking`, `user`, và `profile` để trang sử dụng lại, tránh truy vấn trùng lặp.
  */
 export function useRoleGuard(allowedRoles: UserRole[]) {
   const [checking, setChecking] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
     let active = true;
 
     (async () => {
       const {
-        data: { user },
+        data: { user: u },
       } = await supabase.auth.getUser();
 
-      if (!user) {
-        window.location.href = '/login';
+      if (!u) {
+        router.replace('/login');
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: prof } = await supabase
         .from('profiles')
-        .select('role, status')
-        .eq('id', user.id)
+        .select('*')
+        .eq('id', u.id)
         .single();
 
-      const role = (profile?.role as UserRole) || 'STUDENT';
+      const role = (prof?.role as UserRole) || 'STUDENT';
 
       // Tài khoản bị khóa -> đăng xuất
-      if (profile?.status === 'BANNED') {
+      if (prof?.status === 'BANNED') {
         await supabase.auth.signOut();
-        window.location.href = '/login';
+        router.replace('/login');
         return;
       }
 
       // Sai vai trò -> chuyển về dashboard đúng của họ
       if (!allowedRoles.includes(role)) {
-        window.location.href = DASHBOARD_BY_ROLE[role] || '/dashboard';
+        router.replace(DASHBOARD_BY_ROLE[role] || '/dashboard');
         return;
       }
 
-      if (active) setChecking(false);
+      if (active) {
+        setUser(u);
+        setProfile(prof);
+        setChecking(false);
+      }
     })();
 
     return () => {
@@ -7182,7 +7177,7 @@ export function useRoleGuard(allowedRoles: UserRole[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { checking };
+  return { checking, user, profile };
 }
 
 

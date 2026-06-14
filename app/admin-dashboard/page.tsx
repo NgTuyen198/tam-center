@@ -25,7 +25,7 @@ const PAID_STATUSES = ['PENDING', 'PAID', 'ASSIGNED_CLASS'];
 type AnyRow = any;
 
 export default function AdminDashboard() {
-  const { checking } = useRoleGuard(['ADMIN']);
+  const { checking, user, profile } = useRoleGuard(['ADMIN']);
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'LOGS'>('OVERVIEW');
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,12 +101,9 @@ export default function AdminDashboard() {
   const checkAuthAndFetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setCurrentUser(user);
-
-      const { data: myProf } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-      if (myProf) setMyProfile(myProf as Profile);
+      if (profile) setMyProfile(profile as Profile);
 
       if (activeTab === 'OVERVIEW') {
         const [{ data: regData }, { data: profData }, { data: clsData }, { data: revData }] = await Promise.all([
@@ -131,7 +128,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab]);
+  }, [activeTab, user, profile]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (!checking) checkAuthAndFetch(); }, [checking, checkAuthAndFetch]);
